@@ -2,15 +2,24 @@ from openai import OpenAI
 from typing import Dict, List
 
 
+def _should_format(model_name: str) -> bool:
+    return model_name.startswith(("o1", "o3"))
+
+
 def prompt(
     prompt: str, model_name: str = "gpt-4o-mini", other_settings: Dict = None
 ) -> str:
     client = OpenAI()
 
+    # Add formatting text for o1 and o3 models
+    content = (
+        f"Formatting re-enabled {prompt}" if _should_format(model_name) else prompt
+    )
+
     # Merge default settings with provided settings
     settings = {
         "model": model_name,
-        "messages": [{"role": "user", "content": prompt}],
+        "messages": [{"role": "user", "content": content}],
     }
     if other_settings:
         settings.update(other_settings)

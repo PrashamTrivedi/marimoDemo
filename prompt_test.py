@@ -84,7 +84,7 @@ def _(form, mo):
     )
 
     mo.md(f"# Form Values\n\n{table}")
-    formatted_data, table, value
+    table
     return formatted_data, key, table, value
 
 
@@ -98,37 +98,37 @@ def _(form, listModels, mo, prompt):
 
     print(models_to_run)
 
-    with mo.status.spinner(title="Running prompts on all models..."):
+    with mo.status.spinner(title="Running prompts on all models...") as spinner:
         for model in models_to_run:
+            spinner.update(f"Running prompt on {model}...")
             response = prompt(form.value["prompt"], model)
             prompt_responses.append(
                 {
                     "model_id": model,
-                    "output": response,
+                    "output": mo.md(response),
                 }
             )
-    model, prompt_responses, response
-    return model, models_to_run, prompt_responses, response
+    prompt_responses
+    return model, models_to_run, prompt_responses, response, spinner
 
 
 @app.cell
 def _(mo, prompt_responses):
     mo.stop(not len(prompt_responses), "")
 
-    # Create a table using mo.ui.table
-    multi_model_table = mo.ui.table(
-        prompt_responses, label="Multi-Model Prompt Outputs", selection=None
+    # We need to create tabs from prompt_responses using below example
+    # tabs = mo.ui.tabs(
+        # {"Heading 1": tab1, "Heading 2": tab2}, value="Heading 2"
+    # )
+    tabs = mo.ui.tabs(
+        {
+            f"{response['model_id']}": response["output"]
+            for response in prompt_responses
+        },
+        value=f"{prompt_responses[0]['model_id']}",
     )
-
-    mo.vstack(
-        [
-            mo.md("# Multi-Model Prompt Outputs"),
-            mo.ui.table(prompt_responses, selection=None),
-        ]
-    )
-
-    multi_model_table
-    return (multi_model_table,)
+    tabs
+    return (tabs,)
 
 
 if __name__ == "__main__":
