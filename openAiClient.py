@@ -13,7 +13,7 @@ def prompt(
 
     # Add formatting text for o1 and o3 models
     content = (
-        f"Formatting re-enabled {prompt}" if _should_format(model_name) else prompt
+        f"Formatting re-enabled. {prompt}" if _should_format(model_name) else prompt
     )
 
     # Merge default settings with provided settings
@@ -21,10 +21,14 @@ def prompt(
         "model": model_name,
         "messages": [{"role": "user", "content": content}],
     }
-    if other_settings:
-        settings.update(other_settings)
 
-    response = client.chat.completions.create(**settings)
+    print(other_settings.get("reasoning_effort", None))
+
+    response = client.chat.completions.create(
+        model=model_name,
+        messages=settings["messages"],
+        reasoning_effort=other_settings.get("reasoning_effort", None),
+    )
     return response.choices[0].message.content
 
 

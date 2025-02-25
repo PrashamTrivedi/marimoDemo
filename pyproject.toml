@@ -8,5 +8,5 @@ dependencies = [
     "anthropic>=0.45.2",
     "google-genai>=1.1.0",
     "marimo>=0.11.2",
-    "openai>=1.61.1",
+    "openai>=1.64.0",
 ]

@@ -1,6 +1,6 @@
 import marimo
 
-__generated_with = "0.11.2"
+__generated_with = "0.11.9"
 app = marimo.App(width="full")
 
 
@@ -32,7 +32,8 @@ def form(mo, model_list):
         label="Select Reasoning Models",
         value=False,
     )
-
+    reasoning_effort=mo.ui.dropdown(label="Reasoning efforts for o series models", options=["low", "medium", "high"], value="low")
+    reasoning_tokens=mo.ui.number(label="Number of tokens for reasoning, Anthropic 3-7 model.", value=1024)
     form = (
         mo.md(
             r"""
@@ -40,13 +41,16 @@ def form(mo, model_list):
         {prompt}
         {model}
         {multi_model}
-
+        {reasoning_effort}
+        {reasoning_tokens}
         """
         )
         .batch(
             prompt=prompt_text_area,
             model=models_dropdown,
             multi_model=multi_model_checkbox,
+            reasoning_effort=reasoning_effort,
+            reasoning_tokens=reasoning_tokens
         )
         .form()
     )
@@ -59,6 +63,8 @@ def form(mo, model_list):
         multi_model_checkbox,
         prompt_text_area,
         reasoning_checkbox,
+        reasoning_effort,
+        reasoning_tokens,
     )
 
 
@@ -96,12 +102,24 @@ def _(form, listModels, mo, prompt):
     if form.value["multi_model"]:
         models_to_run = listModels()
 
-    print(models_to_run)
+    reasoning_effort_value=form.value['reasoning_effort']
+    reasoning_tokens_value=form.value['reasoning_tokens']
 
+    print(models_to_run,reasoning_effort_value,reasoning_tokens_value)
+    extra_args={}
     with mo.status.spinner(title="Running prompts on all models...") as spinner:
         for model in models_to_run:
             spinner.update(f"Running prompt on {model}...")
-            response = prompt(form.value["prompt"], model)
+            if model.startswith(("o1", "o3")):
+                extra_args['reasoning_effort']=reasoning_effort_value
+            elif "reasoning" in model and reasoning_tokens_value>=1024:
+                extra_args["thinking"]={
+                    "type": "enabled",
+                    "budget_tokens": reasoning_tokens_value
+                }
+            else:
+                extra_args={}
+            response = prompt(form.value["prompt"], model, extra_args)
             prompt_responses.append(
                 {
                     "model_id": model,
@@ -109,7 +127,16 @@ def _(form, listModels, mo, prompt):
                 }
             )
     prompt_responses
-    return model, models_to_run, prompt_responses, response, spinner
+    return (
+        extra_args,
+        model,
+        models_to_run,
+        prompt_responses,
+        reasoning_effort_value,
+        reasoning_tokens_value,
+        response,
+        spinner,
+    )
 
 
 @app.cell
